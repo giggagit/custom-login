@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <head>
+        <title>Secure Page</title>
+    </head>
+
+    <body>
+        <h1>Hello</h1>
+        
+            <h2>User Infomation</h2>
+            <th:block th:switch="${domain}">
+                <th:block th:case="'local'">
+                    <p>Domain: <span th:text="${domain}"></span></p>
+                    <p>Username: <span sec:authentication="principal.username"></span></p>
+                    <p>Firstname: <span sec:authentication="principal.users.firstname"></span></p>
+                    <p>Lastname: <span sec:authentication="principal.users.lastname"></span></p>
+                    <p>Password: <span sec:authentication="principal.password"></span></p>
+                    <p>E-Mail: <span sec:authentication="principal.users.email"></span></p>
+                </th:block>
+                <th:block th:case="'ldap'">
+                    <p>Domain: <span th:text="${domain}"></span></span></p>
+                    <p>Username: <span sec:authentication="principal.username"></span></p>
+                    <p>Firstname: <span sec:authentication="principal.givenName"></span></p>
+                    <p>Lastname: <span sec:authentication="principal.sn"></span></p>
+                    <p>Password: <span sec:authentication="principal.password"></span></p>
+                    <p>E-Mail: <span sec:authentication="principal.mail"></span></p>
+                    <p>CN: <span sec:authentication="principal.cn"></span></p>
+                    <th:block th:each="cn : ${#authentication.principal.cn}">
+                        <span th:text="*{cn}"></span>
+                    </th:block>
+                </th:block>
+            </th:block>
+            <th:block th:if="${domain} eq 'facebook' or ${domain} eq 'google'">
+                <p>Domain: <span sec:authentication="AuthorizedClientRegistrationId"></span></p>
+                <p>ID: <span sec:authentication="name"></span></p>
+                <p>Name: <span th:text="${#authentication.principal.attributes.get('name')}"></span></p>
+                <p>E-Mail: <span th:text="${#authentication.principal.attributes.get('email')}"></span></p>
+            </th:block>
+
+            <h2>Principal Object</h2>
+            <p sec:authentication="principal"></p>
+            <p><a th:href="@{/change-password}">Change Password</a></p>
+                
+            <form th:action="@{/logout}" method="post">
+                <button type="submit">Logout</button>
+            </form>
+        </pre> 
+    </body>
+</html>

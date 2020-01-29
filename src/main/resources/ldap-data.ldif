@@ -1,0 +1,81 @@
+dn: dc=giggagit,dc=com
+objectclass: top
+objectclass: domain
+dc: giggagit
+
+dn: ou=groups,dc=giggagit,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: groups
+
+dn: ou=people,dc=giggagit,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: people
+
+dn: cn=users,ou=groups,dc=giggagit,dc=com
+objectClass: groupOfUniqueNames
+objectClass: top
+cn: users
+uniqueMember: uid=admin,ou=people,dc=giggagit,dc=com
+
+dn: cn=star,ou=groups,dc=giggagit,dc=com
+objectClass: groupOfUniqueNames
+objectClass: top
+cn: star
+uniqueMember: uid=dominic,ou=people,dc=giggagit,dc=com
+uniqueMember: uid=john,ou=people,dc=giggagit,dc=com
+
+dn: cn=directer,ou=groups,dc=giggagit,dc=com
+objectClass: groupOfUniqueNames
+objectClass: top
+cn: directer
+uniqueMember: uid=michael,ou=people,dc=giggagit,dc=com
+
+dn: uid=admin,ou=people,dc=giggagit,dc=com
+objectClass: inetOrgPerson
+objectClass: person
+objectClass: organizationalPerson
+objectClass: top
+cn: FirstName LastName
+sn: LastName
+givenName: FirstName
+mail: admin@local
+uid: admin
+userPassword: {SSHA}DtmC6zeodqXb3RYmvKSGf3n+mGOmgfbtf96BZA==
+
+dn: uid=dominic,ou=people,dc=giggagit,dc=com
+objectClass: organizationalPerson
+objectClass: person
+objectClass: inetOrgPerson
+objectClass: top
+cn: Dominic Toretto
+sn: Toretto
+givenName: Dominic
+mail: dominic@giggagit.com
+uid: dominic
+userPassword: {SSHA}d2hu2Iyco8/2scwRmQEpzql3+piYAJfdxCVPBQ==
+
+dn: uid=john,ou=people,dc=giggagit,dc=com
+objectClass: organizationalPerson
+objectClass: person
+objectClass: inetOrgPerson
+objectClass: top
+cn: John Wick
+sn: Wick
+givenName: John
+mail: john@giggagit.com
+uid: john
+userPassword: {SSHA}CEU1vKEs7tX0f/S7p/ArRvukGrkuldihcC77Kg==
+
+dn: uid=michael,ou=people,dc=giggagit,dc=com
+objectClass: organizationalPerson
+objectClass: person
+objectClass: inetOrgPerson
+objectClass: top
+cn: Michael Bay
+sn: Bay
+givenName: Michael
+mail: michael@giggagit.com
+uid: michael
+userPassword: {SSHA}TcGAV2C3RsyycbbeDv6PrhfxrOmeShtp5nPXQw==
