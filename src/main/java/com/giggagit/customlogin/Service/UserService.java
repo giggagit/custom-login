@@ -1,6 +1,7 @@
 package com.giggagit.customlogin.Service;
 
 import com.giggagit.customlogin.Exception.UserDomainNotFoundException;
+import com.giggagit.customlogin.Form.ChangePassword;
 import com.giggagit.customlogin.Model.UsersModel;
 
 import org.springframework.security.access.AccessDeniedException;
@@ -20,9 +21,8 @@ public interface UserService extends UserDetailsService {
     public UsersModel findByEmailAndDomain(String username, String domain);
     public void usersDomain(String domain) throws UserDomainNotFoundException;
     public Authentication currentUsers();
-    public Boolean registerUsers(UsersModel usersModel, String confirmPassword)
-            throws UserDomainNotFoundException;
-    public Boolean changePassword(String currentPassword, String newPassword, String confirmPassword, String domain)
+    public Boolean registerUsers(UsersModel usersModel) throws UserDomainNotFoundException;
+    public Boolean changePassword(ChangePassword changePassword, String domain)
             throws AccessDeniedException, UsernameNotFoundException;
             
 }

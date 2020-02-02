@@ -10,6 +10,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
 import com.giggagit.customlogin.Exception.UserDomainNotFoundException;
+import com.giggagit.customlogin.Form.ChangePassword;
 import com.giggagit.customlogin.Model.CustomUserDetails;
 import com.giggagit.customlogin.Model.UsersModel;
 import com.giggagit.customlogin.Repository.RoleRepository;
@@ -149,12 +150,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Boolean registerUsers(UsersModel usersModel, String confirmPassword) throws UserDomainNotFoundException {
+    public Boolean registerUsers(UsersModel usersModel) throws UserDomainNotFoundException {
         Boolean registerStatus = false;
         String userDomain = usersModel.getDomain().toLowerCase();
 
         // Compare user password with confirm password
-        if (usersModel.getPassword().equals(confirmPassword)) {
+        if (usersModel.getPassword().equals(usersModel.getConfirmPassword())) {
             switch (userDomain) {
                 case "local":
                      // Search local user exists
@@ -216,7 +217,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Boolean changePassword(String currentPassword, String newPassword, String confirmPassword, String domain)
+    public Boolean changePassword(ChangePassword changePassword, String domain)
             throws AccessDeniedException, UsernameNotFoundException {
         Boolean changeStatus = false;
         String userDomain = domain.toLowerCase();
@@ -239,7 +240,7 @@ public class UserServiceImpl implements UserService {
                 }
                 
                 // Compare current password
-                if (passwordEncoder.local().matches(currentPassword, usersModel.getPassword())) {
+                if (passwordEncoder.local().matches(changePassword.getCurrentPassword(), usersModel.getPassword())) {
                     getPrincipal = true;
                 }
             } else if (principal instanceof DefaultOAuth2User) {
@@ -255,9 +256,9 @@ public class UserServiceImpl implements UserService {
             }
 
             if (getPrincipal) {
-                // Verify new password
-                if (newPassword.equals(confirmPassword)) {
-                    usersModel.setPassword(passwordEncoder.local().encode(newPassword));
+                // Compare new password
+                if (changePassword.getNewPassword().equals(changePassword.getConfirmNewPassword())) {
+                    usersModel.setPassword(passwordEncoder.local().encode(changePassword.getNewPassword()));
                     saveUsers(usersModel);
                     changeStatus = true;
                 }
@@ -272,9 +273,9 @@ public class UserServiceImpl implements UserService {
                 .build();
 
             // Compare current ldap user password by re-authenticate
-            if (ldapTemplate.authenticate(dn, "(objectClass=person)", currentPassword)) {
+            if (ldapTemplate.authenticate(dn, "(objectClass=person)", changePassword.getCurrentPassword())) {
                 // Compare new password
-                if (newPassword.equals(confirmPassword)) {
+                if (changePassword.getNewPassword().equals(changePassword.getConfirmNewPassword())) {
                     DirContextOperations context = ldapTemplate.lookupContext(dn);
 
                     context.setAttributeValues("objectClass", new String[] {"organizationalPerson", "inetOrgPerson", "top", "person"});
@@ -283,7 +284,7 @@ public class UserServiceImpl implements UserService {
                     context.setAttributeValue("givenName", ldapUsers.getGivenName());
                     context.setAttributeValue("mail", ldapUsers.getMail());
                     context.setAttributeValue("uid", ldapUsers.getUid());
-                    context.setAttributeValue("userPassword", newPassword);
+                    context.setAttributeValue("userPassword", changePassword.getNewPassword());
 
                     ldapTemplate.modifyAttributes(context);
                     changeStatus = true;

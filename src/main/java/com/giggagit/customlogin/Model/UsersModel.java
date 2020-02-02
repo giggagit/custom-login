@@ -10,6 +10,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 
@@ -40,6 +41,10 @@ public class UsersModel implements Serializable {
 
     @NotBlank
     private String password;
+
+    @NotBlank
+    @Transient
+    private String confirmPassword;
 
     @NotBlank
     private String domain;
@@ -88,6 +93,14 @@ public class UsersModel implements Serializable {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getConfirmPassword() {
+        return this.confirmPassword;
+    }
+
+    public void setConfirmPassword(String confirmPassword) {
+        this.confirmPassword = confirmPassword;
     }
 
     public String getEmail() {

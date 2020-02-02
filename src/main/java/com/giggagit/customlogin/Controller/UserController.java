@@ -3,6 +3,7 @@ package com.giggagit.customlogin.Controller;
 import java.util.List;
 import javax.validation.Valid;
 
+import com.giggagit.customlogin.Form.ChangePassword;
 import com.giggagit.customlogin.Model.CustomUserDetails;
 import com.giggagit.customlogin.Model.UsersModel;
 import com.giggagit.customlogin.Service.UserService;
@@ -18,7 +19,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.RequestContextHolder;
 
 /**
@@ -53,14 +53,11 @@ public class UserController {
         return "register";
     }
 
-    @PostMapping("/register/process")
-    public String registerProcess(
-            @RequestParam("confirmPassword") String confirmPassword,
-            @Valid UsersModel usersModel,
-            BindingResult bindingResult) {
+    @PostMapping("/register")
+    public String registerProcess(@Valid UsersModel usersModel, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
-            return "redirect:/register?error";
-        } else if (userService.registerUsers(usersModel, confirmPassword)) {
+            return "register";
+        } else if (userService.registerUsers(usersModel)) {
             return "redirect:/register?success";
         }
 
@@ -68,23 +65,22 @@ public class UserController {
     }
 
     @GetMapping("/change-password")
-    public String changePassword(@CookieValue(name = "domain", required = false) String domain, Model model) {
+    public String changePassword(@CookieValue(name = "domain", required = false) String domain,
+            ChangePassword changePassword, Model model) {
         userService.usersDomain(domain);
         model.addAttribute("domain", domain);
         return "change-password";
     }
 
     @PostMapping("/change-password")
-    public String changePasswordProcess(
-            @RequestParam(name = "current-password", required = false) String currentPassword,
-            @RequestParam("new-password") String newPassword,
-            @RequestParam("confirm-password") String confirmPassword,
-            @CookieValue(name = "domain", required = false) String domain) {
+    public String changePasswordProcess(@Valid ChangePassword changePassword, BindingResult result,
+            @CookieValue(name = "domain", required = false) String domain, Model model) {
         userService.usersDomain(domain);
 
-        if (newPassword == null || newPassword.isBlank()) {
-            return "redirect:/change-password?error";
-        } else if (userService.changePassword(currentPassword, newPassword, confirmPassword, domain)) {
+        if (result.hasErrors()) {
+            model.addAttribute("domain", domain);
+            return "change-password";
+        } else if (userService.changePassword(changePassword, domain)) {
             String sessionUsername;
             String authenticationUsername;
             String currentSessionId = RequestContextHolder.currentRequestAttributes().getSessionId();
