@@ -20,7 +20,7 @@ public class CustomUserDetails implements UserDetails {
     
     private UsersModel users;
 
-    public CustomUserDetails(final UsersModel users) {
+    public CustomUserDetails(UsersModel users) {
         this.users = users;
     }
 
