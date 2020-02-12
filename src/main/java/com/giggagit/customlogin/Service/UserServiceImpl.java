@@ -10,7 +10,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
 import com.giggagit.customlogin.Exception.UserDomainNotFoundException;
-import com.giggagit.customlogin.Form.ChangePassword;
 import com.giggagit.customlogin.Model.CustomUserDetails;
 import com.giggagit.customlogin.Model.UsersModel;
 import com.giggagit.customlogin.Repository.RoleRepository;
@@ -18,7 +17,6 @@ import com.giggagit.customlogin.Repository.UserRepository;
 import com.giggagit.customlogin.Security.CustomPasswordEncoder;
 
 import org.apache.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.DirContextOperations;
@@ -45,26 +43,25 @@ public class UserServiceImpl implements UserService {
 
     final static Logger logger = Logger.getLogger(UserServiceImpl.class);
     
-    @Autowired
-    private HttpServletRequest request;
-    
-    @Autowired
-    private UserRepository userRepository;
+    private final HttpServletRequest request;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final LdapTemplate ldapTemplate;
+    private final CustomPasswordEncoder passwordEncoder;
 
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private LdapTemplate ldapTemplate;
-
-    @Autowired
-    private CustomPasswordEncoder passwordEncoder;
+    public UserServiceImpl(HttpServletRequest request, UserRepository userRepository, RoleRepository roleRepository, LdapTemplate ldapTemplate, CustomPasswordEncoder passwordEncoder) {
+        this.request = request;
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.ldapTemplate = ldapTemplate;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserDetails userDetials = null;
-        String domain = request.getParameter("domain").toLowerCase();
+        String domain = request.getParameter("domain");
 
         if (domain == null) {
             Cookie[] cookies = request.getCookies();
@@ -138,14 +135,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void usersDomain(String domain) throws UserDomainNotFoundException {
-        if (domain == null || domain.isEmpty() || checkDomain(domain)) {
+        if (domain == null || domain.isEmpty() || domainList(domain)) {
             throw new UserDomainNotFoundException("User domain not found");
         }
     }
 
     @Override
-    public Authentication currentUsers() {
+    public Authentication currentUsers() throws AccessDeniedException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null) {
+            throw new AccessDeniedException("Access Denied");
+        }
+
         return authentication;
     }
 
@@ -155,7 +157,7 @@ public class UserServiceImpl implements UserService {
         String userDomain = usersModel.getDomain().toLowerCase();
 
         // Compare user password with confirm password
-        if (usersModel.getPassword().equals(usersModel.getConfirmPassword())) {
+        if (usersModel.getPassword().equals(usersModel.getPasswordConfirm())) {
             switch (userDomain) {
                 case "local":
                      // Search local user exists
@@ -217,38 +219,33 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Boolean changePassword(ChangePassword changePassword, String domain)
-            throws AccessDeniedException, UsernameNotFoundException {
+    public Boolean changePassword(UsersModel usersModel, String domain)
+            throws UsernameNotFoundException {
         Boolean changeStatus = false;
         String userDomain = domain.toLowerCase();
         Object principal = currentUsers().getPrincipal();
 
-        if (currentUsers() == null) {
-            throw new AccessDeniedException("Access Denied");
-        }
-
         if (principal instanceof CustomUserDetails || principal instanceof DefaultOAuth2User) {
-            UsersModel usersModel = null;
+            UsersModel getUsersModel = null;
             Boolean getPrincipal = false;
 
             if (principal instanceof CustomUserDetails)  {
                 CustomUserDetails userDetails = (CustomUserDetails) principal;
-                usersModel = findByUsernameAndDomain(userDetails.getUsername(), userDomain);
+                getUsersModel = findByUsernameAndDomain(userDetails.getUsername(), userDomain);
 
-                if (usersModel == null) {
-                    throw new UsernameNotFoundException("Username not Found.");
-                }
-                
                 // Compare current password
-                if (passwordEncoder.local().matches(changePassword.getCurrentPassword(), usersModel.getPassword())) {
+                if (getUsersModel == null) {
+                    throw new UsernameNotFoundException("Username not Found.");
+                } else if (passwordEncoder.local().matches(usersModel.getPassword(), getUsersModel.getPassword())) {
                     getPrincipal = true;
                 }
+                
             } else if (principal instanceof DefaultOAuth2User) {
                 DefaultOAuth2User oAuth2User = (DefaultOAuth2User) principal;
-                usersModel = findByUsernameAndDomain(oAuth2User.getName(), userDomain);
+                getUsersModel = findByUsernameAndDomain(oAuth2User.getName(), userDomain);
 
-                if (usersModel == null) {
-                    throw new UsernameNotFoundException("Invalid username or password.");
+                if (getUsersModel == null) {
+                    throw new UsernameNotFoundException("Username not Found.");
                 }
 
                 // Not Compare password fo oAuth2 user
@@ -257,9 +254,9 @@ public class UserServiceImpl implements UserService {
 
             if (getPrincipal) {
                 // Compare new password
-                if (changePassword.getNewPassword().equals(changePassword.getConfirmNewPassword())) {
-                    usersModel.setPassword(passwordEncoder.local().encode(changePassword.getNewPassword()));
-                    saveUsers(usersModel);
+                if (usersModel.getPasswordNew().equals(usersModel.getPasswordConfirm())) {
+                    getUsersModel.setPassword(passwordEncoder.local().encode(usersModel.getPasswordNew()));
+                    saveUsers(getUsersModel);
                     changeStatus = true;
                 }
             }
@@ -273,9 +270,9 @@ public class UserServiceImpl implements UserService {
                 .build();
 
             // Compare current ldap user password by re-authenticate
-            if (ldapTemplate.authenticate(dn, "(objectClass=person)", changePassword.getCurrentPassword())) {
+            if (ldapTemplate.authenticate(dn, "(objectClass=person)", usersModel.getPassword())) {
                 // Compare new password
-                if (changePassword.getNewPassword().equals(changePassword.getConfirmNewPassword())) {
+                if (usersModel.getPasswordNew().equals(usersModel.getPasswordConfirm())) {
                     DirContextOperations context = ldapTemplate.lookupContext(dn);
 
                     context.setAttributeValues("objectClass", new String[] {"organizationalPerson", "inetOrgPerson", "top", "person"});
@@ -284,7 +281,7 @@ public class UserServiceImpl implements UserService {
                     context.setAttributeValue("givenName", ldapUsers.getGivenName());
                     context.setAttributeValue("mail", ldapUsers.getMail());
                     context.setAttributeValue("uid", ldapUsers.getUid());
-                    context.setAttributeValue("userPassword", changePassword.getNewPassword());
+                    context.setAttributeValue("userPassword", usersModel.getPasswordNew());
 
                     ldapTemplate.modifyAttributes(context);
                     changeStatus = true;
@@ -295,9 +292,9 @@ public class UserServiceImpl implements UserService {
         return changeStatus;
     }
     
-    private Boolean checkDomain(String domain) {
+    private Boolean domainList(String domain) {
         return !domain.equalsIgnoreCase("local") && !domain.equalsIgnoreCase("ldap") &&
                 !domain.equalsIgnoreCase("facebook") && !domain.equalsIgnoreCase("google");
     }
-
+    
 }

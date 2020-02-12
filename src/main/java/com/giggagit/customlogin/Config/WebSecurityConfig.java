@@ -1,16 +1,14 @@
 package com.giggagit.customlogin.Config;
 
 import com.giggagit.customlogin.Security.CustomAuthenticationDetailsSource;
-import com.giggagit.customlogin.Security.CustomPasswordEncoder;
+import com.giggagit.customlogin.Security.CustomAuthenticationProvider;
+import com.giggagit.customlogin.Security.CustomSuccessHandler;
 import com.giggagit.customlogin.Service.CustomOAuth2UserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.ldap.core.LdapTemplate;
-import org.springframework.ldap.core.support.LdapContextSource;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -18,12 +16,6 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.ldap.DefaultLdapUsernameToDnMapper;
-import org.springframework.security.ldap.authentication.LdapAuthenticationProvider;
-import org.springframework.security.ldap.authentication.PasswordComparisonAuthenticator;
-import org.springframework.security.ldap.userdetails.InetOrgPersonContextMapper;
-import org.springframework.security.ldap.userdetails.LdapUserDetailsManager;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 /**
  * WebSecurityConfig
@@ -32,21 +24,23 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     
-    @Autowired
-    private UserDetailsService userDetailsService;
+    private final UserDetailsService userDetailsService;
+    private final CustomOAuth2UserService oAuth2UserService;
+    private final CustomSuccessHandler successHandler;
+    private final CustomAuthenticationDetailsSource authenticationDetailsSource;
+    private final CustomAuthenticationProvider authenticationProvider;
 
-    @Autowired
-    private CustomOAuth2UserService oAuth2UserService;
+    public WebSecurityConfig(@Qualifier("userServiceImpl") UserDetailsService userDetailsService,
+            CustomOAuth2UserService oAuth2UserService, CustomSuccessHandler successHandler,
+            CustomAuthenticationDetailsSource authenticationDetailsSource,
+            CustomAuthenticationProvider authenticationProvider) {
+        this.userDetailsService = userDetailsService;
+        this.oAuth2UserService = oAuth2UserService;
+        this.successHandler = successHandler;
+        this.authenticationDetailsSource = authenticationDetailsSource;
+        this.authenticationProvider = authenticationProvider;
+    }
     
-    @Autowired
-    private AuthenticationSuccessHandler successHandler;
-
-    @Autowired
-    private CustomAuthenticationDetailsSource authenticationDetailsSource;
-
-    @Autowired
-    private AuthenticationProvider authenticationProvider;
-
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
@@ -97,65 +91,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         return new SessionRegistryImpl();
     }
 
-    @Bean
-    public CustomPasswordEncoder passwordEncoder() {
-        return new CustomPasswordEncoder();
-    }
-
-    @Bean
-    public InetOrgPersonContextMapper inetOrgPersonContextMapper() {
-        return new InetOrgPersonContextMapper();
-    }
-    
-    @Bean
-    public LdapContextSource contextSource() {
-        LdapContextSource ldapContextSource = new LdapContextSource();
-        ldapContextSource.setUrl("ldap://localhost:10389/");
-        ldapContextSource.setBase("dc=giggagit,dc=com");
-        ldapContextSource.setUserDn("uid=admin,ou=system");
-        ldapContextSource.setPassword("secret");
-        ldapContextSource.afterPropertiesSet();
-        return ldapContextSource;
-    }
-
-    @Bean
-    public UserDetailsService ldapUserDetailsService() {
-        LdapUserDetailsManager ldapUserDetails = new LdapUserDetailsManager(contextSource());
-        ldapUserDetails.setUsernameMapper(new DefaultLdapUsernameToDnMapper("ou=people","uid"));
-        ldapUserDetails.setGroupSearchBase("ou=groups");
-        return ldapUserDetails;
-    }
-
-    @Bean
-    public LdapTemplate ldapTemplate() throws Exception {
-        LdapTemplate ldapTemplate = new LdapTemplate(contextSource());
-        ldapTemplate.afterPropertiesSet();
-        return ldapTemplate;
-    }
-
-    @Bean
-    public LdapAuthenticationProvider ldapAuthenticationProvider() {
-        PasswordComparisonAuthenticator passwordComparisonAuthenticator = new PasswordComparisonAuthenticator(contextSource());
-        passwordComparisonAuthenticator.setPasswordEncoder(passwordEncoder().ldap());
-        passwordComparisonAuthenticator.setPasswordAttributeName("userPassword");
-        passwordComparisonAuthenticator.setUserDnPatterns(new String[] {"uid={0},ou=people"});
-        passwordComparisonAuthenticator.afterPropertiesSet();
-        LdapAuthenticationProvider ldapAuthenticationProvider = new LdapAuthenticationProvider(passwordComparisonAuthenticator);
-        ldapAuthenticationProvider.setUserDetailsContextMapper(inetOrgPersonContextMapper());
-        return ldapAuthenticationProvider;
-    }
-
-    @Bean
-    public DaoAuthenticationProvider localAuthentication() {
-        DaoAuthenticationProvider localAuthentication = new DaoAuthenticationProvider();
-        localAuthentication.setUserDetailsService(userDetailsService);
-        localAuthentication.setPasswordEncoder(passwordEncoder().local());
-        return localAuthentication;
-    }
-    
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
         auth.authenticationProvider(authenticationProvider);
     }
-    
+
 }

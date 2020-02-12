@@ -1,14 +1,13 @@
 package com.giggagit.customlogin.Controller;
 
 import java.util.List;
-import javax.validation.Valid;
 
-import com.giggagit.customlogin.Form.ChangePassword;
+import com.giggagit.customlogin.GroupValidation.Password;
+import com.giggagit.customlogin.GroupValidation.Profile;
 import com.giggagit.customlogin.Model.CustomUserDetails;
 import com.giggagit.customlogin.Model.UsersModel;
 import com.giggagit.customlogin.Service.UserService;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.ldap.userdetails.InetOrgPerson;
@@ -16,6 +15,7 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,11 +27,13 @@ import org.springframework.web.context.request.RequestContextHolder;
 @Controller
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
+    private final SessionRegistry sessionRegistry;
 
-    @Autowired
-    private SessionRegistry sessionRegistry;
+    public UserController(UserService userService, SessionRegistry sessionRegistry) {
+        this.userService = userService;
+        this.sessionRegistry = sessionRegistry;
+    }
 
     @GetMapping("/login")
     public String login() {
@@ -39,9 +41,8 @@ public class UserController {
     }
 
     @GetMapping({ "/index", "/" })
-    public String index(
-            Model model,
-            @CookieValue(name = "domain", required = false) String domain) {
+    public String index(Model model,
+            @CookieValue(name = "domain", required = false) String domain){
         userService.usersDomain(domain);
         model.addAttribute("domain", domain);
         
@@ -54,7 +55,8 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public String registerProcess(@Valid UsersModel usersModel, BindingResult bindingResult) {
+    public String registerProcess(@Validated(Profile.class) UsersModel usersModel,
+            BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return "register";
         } else if (userService.registerUsers(usersModel)) {
@@ -66,21 +68,22 @@ public class UserController {
 
     @GetMapping("/change-password")
     public String changePassword(@CookieValue(name = "domain", required = false) String domain,
-            ChangePassword changePassword, Model model) {
+            UsersModel usersModel, Model model) {
         userService.usersDomain(domain);
         model.addAttribute("domain", domain);
         return "change-password";
     }
 
     @PostMapping("/change-password")
-    public String changePasswordProcess(@Valid ChangePassword changePassword, BindingResult result,
-            @CookieValue(name = "domain", required = false) String domain, Model model) {
+    public String changePasswordProcess(@Validated(Password.class) UsersModel usersModel,
+            BindingResult bindingResult, @CookieValue(name = "domain", required = false) String domain,
+            Model model) {
         userService.usersDomain(domain);
 
-        if (result.hasErrors()) {
+        if (bindingResult.hasErrors()) {
             model.addAttribute("domain", domain);
             return "change-password";
-        } else if (userService.changePassword(changePassword, domain)) {
+        } else if (userService.changePassword(usersModel, domain)) {
             String sessionUsername;
             String authenticationUsername;
             String currentSessionId = RequestContextHolder.currentRequestAttributes().getSessionId();

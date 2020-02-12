@@ -11,7 +11,6 @@ import com.giggagit.customlogin.Repository.RoleRepository;
 import com.giggagit.customlogin.Repository.UserRepository;
 import com.giggagit.customlogin.Security.CustomPasswordEncoder;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -24,14 +23,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final CustomPasswordEncoder passwordEnder;
 
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private CustomPasswordEncoder passwordEnder;
+    public CustomOAuth2UserService(UserRepository userRepository, RoleRepository roleRepository,
+            CustomPasswordEncoder passwordEnder) {
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.passwordEnder = passwordEnder;
+    }
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest oAuth2UserRequest) throws OAuth2AuthenticationException {

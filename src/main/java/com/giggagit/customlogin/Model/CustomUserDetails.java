@@ -18,16 +18,16 @@ public class CustomUserDetails implements UserDetails {
      */
     private static final long serialVersionUID = 1L;
     
-    private UsersModel users;
+    private final UsersModel usersModel;
 
-    public CustomUserDetails(UsersModel users) {
-        this.users = users;
+    public CustomUserDetails(UsersModel usersModel) {
+        this.usersModel = usersModel;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         Set<GrantedAuthority> grantedAuthorities = new HashSet<>();
-        for (RolesModel roles : this.users.getRoles()) {
+        for (RolesModel roles : this.usersModel.getRoles()) {
             grantedAuthorities.add(new SimpleGrantedAuthority(roles.getName()));
         }
         return grantedAuthorities;
@@ -35,12 +35,12 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getPassword() {
-        return this.users.getPassword();
+        return this.usersModel.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return this.users.getUsername();
+        return this.usersModel.getUsername();
     }
 
     @Override
@@ -63,8 +63,8 @@ public class CustomUserDetails implements UserDetails {
         return true;
     }
 
-    public UsersModel getUsers() {
-        return this.users;
+    public UsersModel getUsersModel() {
+        return this.usersModel;
     }
 
 }

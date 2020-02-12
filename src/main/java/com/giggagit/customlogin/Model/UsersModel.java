@@ -14,6 +14,9 @@ import javax.persistence.Transient;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 
+import com.giggagit.customlogin.GroupValidation.Password;
+import com.giggagit.customlogin.GroupValidation.Profile;
+
 /**
  * UsersModel
  */
@@ -30,26 +33,30 @@ public class UsersModel implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @NotBlank
+    @NotBlank(groups = Profile.class)
     private String username;
 
-    @NotBlank
+    @NotBlank(groups = Profile.class)
     private String firstname;
 
-    @NotBlank
+    @NotBlank(groups = Profile.class)
     private String lastname;
 
-    @NotBlank
+    @NotBlank(groups = {Profile.class, Password.class})
     private String password;
 
-    @NotBlank
     @Transient
-    private String confirmPassword;
+    @NotBlank(groups = Password.class)
+    private String passwordNew;
 
-    @NotBlank
+    @Transient
+    @NotBlank(groups = {Profile.class, Password.class})
+    private String passwordConfirm;
+
+    @NotBlank(groups = Profile.class)
     private String domain;
     
-    @Email
+    @Email(groups = Profile.class)
     private String email;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -95,12 +102,20 @@ public class UsersModel implements Serializable {
         this.password = password;
     }
 
-    public String getConfirmPassword() {
-        return this.confirmPassword;
+    public String getPasswordNew() {
+        return this.passwordNew;
     }
 
-    public void setConfirmPassword(String confirmPassword) {
-        this.confirmPassword = confirmPassword;
+    public void setPasswordNew(String passwordNew) {
+        this.passwordNew = passwordNew;
+    }
+
+    public String getPasswordConfirm() {
+        return this.passwordConfirm;
+    }
+
+    public void setpasswordConfirm(String passwordConfirm) {
+        this.passwordConfirm = passwordConfirm;
     }
 
     public String getEmail() {

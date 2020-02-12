@@ -25,8 +25,4 @@ public class CustomWebAuthenticationDetails extends WebAuthenticationDetails {
         return this.domain;
     }
 
-	public void setDomain(String domain) {
-        this.domain = domain;
-    }
-
 }

@@ -2,7 +2,6 @@ package com.giggagit.customlogin.Security;
 
 import com.giggagit.customlogin.Exception.UserDomainNotFoundException;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -17,16 +16,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class CustomAuthenticationProvider implements AuthenticationProvider {
     
-    private LdapAuthenticationProvider ldapAuthenticationProvider;
-    private DaoAuthenticationProvider localAuthentication;
+    private final LdapAuthenticationProvider ldapAuthenticationProvider;
+    private final DaoAuthenticationProvider localAuthentication;
 
-    @Autowired
-    public void setLdapAuthenticationProvider(LdapAuthenticationProvider ldapAuthenticationProvider) {
+    public CustomAuthenticationProvider(LdapAuthenticationProvider ldapAuthenticationProvider,
+            DaoAuthenticationProvider localAuthentication) {
         this.ldapAuthenticationProvider = ldapAuthenticationProvider;
-    }
-
-    @Autowired
-    public void setLocalAuthentication(DaoAuthenticationProvider localAuthentication) {
         this.localAuthentication = localAuthentication;
     }
     
