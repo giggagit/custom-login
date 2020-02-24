@@ -11,8 +11,8 @@
 	<groupId>com.giggagit</groupId>
 	<artifactId>custom-login</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>demo</name>
-	<description>Demo project for Spring Boot</description>
+	<name>Custom Login</name>
+	<description>Custom login with DB, LDAP and OAuth2</description>
 
 	<properties>
 		<java.version>11</java.version>
