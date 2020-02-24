@@ -49,7 +49,8 @@ public class UserServiceImpl implements UserService {
     private final LdapTemplate ldapTemplate;
     private final CustomPasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(HttpServletRequest request, UserRepository userRepository, RoleRepository roleRepository, LdapTemplate ldapTemplate, CustomPasswordEncoder passwordEncoder) {
+    public UserServiceImpl(HttpServletRequest request, UserRepository userRepository,
+            RoleRepository roleRepository, LdapTemplate ldapTemplate, CustomPasswordEncoder passwordEncoder) {
         this.request = request;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
